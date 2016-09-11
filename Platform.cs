@@ -103,7 +103,8 @@ namespace PlatformBuilderPro
             for (var k = 0; k < _platformSections.Count; k++)
             {
                 var section = _platformSections[k];
-                section.DrawSection();
+                if (section != null)
+                    section.DrawSection();
             }
         }
 
