@@ -17,7 +17,7 @@ public class PlatformBuilderWindow : EditorWindow
 	{
         if (GUILayout.Button("Open Documentation"))
         {
-            Application.OpenURL("http://renderedturkey.com/platform-builder-pro-documentation/");
+            Application.OpenURL("https://github.com/horsley86/platform-builder-pro/wiki");
         }
         GUILayout.Space(20f);
 
