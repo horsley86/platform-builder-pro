@@ -45,10 +45,11 @@ public class PlatformBuilderWindow : EditorWindow
                 {
                     if (GUILayout.Button(platform.strategies[i].GuiTitle))
                     {
-                        if (activeStrategyIndex != i)
-                        {
-                            platform.SetStrategy(platform.strategies[i]);
-                        }
+                        //if (activeStrategyIndex != i)
+                        //{
+                        //    platform.SetStrategy(platform.strategies[i]);
+                        //}
+                        platform.SetStrategy(platform.strategies[i]);
                         activeStrategyIndex = i;
                     }
 

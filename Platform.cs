@@ -1,7 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor;
 
 namespace PlatformBuilderPro
 {
@@ -40,13 +39,15 @@ namespace PlatformBuilderPro
 
         public void Awake()
         {
+            #if UNITY_EDITOR
             //if this is a prefab, then we need to break the connection so it will update on its own.
             if (_platformSections != null && _platformSections.Count > 0)
             {
-                PrefabUtility.DisconnectPrefabInstance(this);
+                UnityEditor.PrefabUtility.DisconnectPrefabInstance(this);
                 meshFilter.sharedMesh = null;
                 UpdateConsistant();
             }
+            #endif
         }
 
         //set up platform specific items for this instance. Called once during creation.

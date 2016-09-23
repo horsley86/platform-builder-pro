@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using UnityEditor;
 using UnityEngine;
 
 namespace PlatformBuilderPro
@@ -94,11 +93,12 @@ namespace PlatformBuilderPro
 
                     objMaterial.name = mats[material].name;
 
+#if UNITY_EDITOR
                     if (mats[material].mainTexture)
-                        objMaterial.textureName = AssetDatabase.GetAssetPath(mats[material].mainTexture);
+                        objMaterial.textureName = UnityEditor.AssetDatabase.GetAssetPath(mats[material].mainTexture);
                     else
                         objMaterial.textureName = null;
-
+#endif
                     materialList.Add(objMaterial.name, objMaterial);
                 }
                 catch (ArgumentException)
@@ -160,7 +160,9 @@ namespace PlatformBuilderPro
             }
             catch
             {
-                EditorUtility.DisplayDialog("Error!", "Failed to create target folder!", "");
+#if UNITY_EDITOR
+                UnityEditor.EditorUtility.DisplayDialog("Error!", "Failed to create target folder!", "");
+#endif
                 return false;
             }
 
@@ -171,13 +173,13 @@ namespace PlatformBuilderPro
         {
             if (!CreateTargetFolder())
                 return;
-
-            Transform[] selection = Selection.GetTransforms(SelectionMode.Editable | SelectionMode.ExcludePrefab);
+#if UNITY_EDITOR
+            Transform[] selection = UnityEditor.Selection.GetTransforms(UnityEditor.SelectionMode.Editable | UnityEditor.SelectionMode.ExcludePrefab);
             selection = selection.Select(x => x.root).ToArray();
 
             if (selection.Length == 0)
             {
-                EditorUtility.DisplayDialog("No source object selected!", "Please select one or more target objects", "");
+                UnityEditor.EditorUtility.DisplayDialog("No source object selected!", "Please select one or more target objects", "");
                 return;
             }
 
@@ -206,10 +208,13 @@ namespace PlatformBuilderPro
                 }
 
                 MeshesToFile(mf, targetFolder, filename);
-                AssetDatabase.Refresh();
+
+                UnityEditor.AssetDatabase.Refresh();
+
             }
             else
-                EditorUtility.DisplayDialog("Objects not exported", "Make sure at least some of your selected objects have mesh filters!", "");
+                UnityEditor.EditorUtility.DisplayDialog("Objects not exported", "Make sure at least some of your selected objects have mesh filters!", "");
+#endif
         }
     }
 }
