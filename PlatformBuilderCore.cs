@@ -42,7 +42,8 @@ namespace PlatformBuilderPro
         {
             var platform = _gameObject.GetComponent<Platform>();
             var points = platform.GetPoints();
-            var sections = platform.GetSections();
+            
+            //var sections = platform.GetSections();
 
             //run current strategy before building mesh
             var updateInfo = platformBuilder.Update(points);
@@ -53,7 +54,9 @@ namespace PlatformBuilderPro
             points = updateInfo.points;
 
             //get verts from points
-            vertMatrix = points.Select(x => x.Select(z => new Vert { Vector = z.transform.position, Children = z.Children.Select(y => y.point).ToArray() }).ToArray()).ToArray();
+            vertMatrix = points.Select(x => x.Select(z => new Vert { Vector = z.transform.position, Children = z.Children.Select(y => y.transform.position).ToArray() }).ToArray()).ToArray();
+
+            
 
             //check for any verts with child points and set them up as their own verts
             for (var i = 0; i < vertMatrix.Length; i++)
@@ -73,30 +76,30 @@ namespace PlatformBuilderPro
             }
 
             //set up children from platformSections
-            var sectionsWithChildren = sections.Where(x => x.Children.Count > 0).ToArray();
-            if (sectionsWithChildren.Length > 0)
-            {
-                for (var i = 0; i < sectionsWithChildren.Length; i++)
-                {
-                    var section = sectionsWithChildren[i];
-                    section.UpdateChildren();
-                    var previousSectionsChildCount = sectionsWithChildren.Take(i).Select(x => x.Children.Count);
-                    var previousSectionsChildCountIndex = 0;
-                    if (previousSectionsChildCount.Count() > 0)
-                    {
-                        previousSectionsChildCountIndex = previousSectionsChildCount.Aggregate((previous, next) => previous + next);
-                    }
-                    var sectionIndex = Array.IndexOf(sections.ToArray(), section) + previousSectionsChildCountIndex;
-                    
-                    for (var k = 0; k < section.Children.Count; k++)
-                    {
-                        var child = section.Children[k];
-                        var vertMatrixList = vertMatrix.ToList();
-                        vertMatrixList.Insert(sectionIndex + k + 1, child.positions.Select(x => new Vert { Vector = x }).ToArray());
-                        vertMatrix = vertMatrixList.ToArray();
-                    }
-                }
-            }
+            //var sectionsWithChildren = sections.Where(x => x.Children.Count > 0).ToArray();
+            //if (sectionsWithChildren.Length > 0)
+            //{
+            //    for (var i = 0; i < sectionsWithChildren.Length; i++)
+            //    {
+            //        var section = sectionsWithChildren[i];
+            //        //section.UpdateChildren();
+            //        var previousSectionsChildCount = sectionsWithChildren.Take(i).Select(x => x.Children.Count);
+            //        var previousSectionsChildCountIndex = 0;
+            //        if (previousSectionsChildCount.Count() > 0)
+            //        {
+            //            previousSectionsChildCountIndex = previousSectionsChildCount.Aggregate((previous, next) => previous + next);
+            //        }
+            //        var sectionIndex = Array.IndexOf(sections.ToArray(), section) + previousSectionsChildCountIndex;
+
+            //        for (var k = 0; k < section.Children.Count; k++)
+            //        {
+            //            var child = section.Children[k];
+            //            var vertMatrixList = vertMatrix.ToList();
+            //            vertMatrixList.Insert(sectionIndex + k + 1, child.positions.Select(x => new Vert { Vector = x }).ToArray());
+            //            vertMatrix = vertMatrixList.ToArray();
+            //        }
+            //    }
+            //}
 
             //generate individual sub meshes, one rectangle at a time, and add them to the meshList
             var meshList = new List<Mesh>();
@@ -106,7 +109,7 @@ namespace PlatformBuilderPro
             {
                 var currentSection = vertMatrix[i];
                 var nextSection = vertMatrix[i + 1];
-
+                
                 for (var k = 0; k < currentSection.Length; k++)
                 {
                     var nextIndex = 0;
@@ -168,7 +171,7 @@ namespace PlatformBuilderPro
             for (var i = 0; i < parentVerts.Length; i++)
             {
                 var parentSubmeshIndex = Array.IndexOf(vertMatrix[0], parentVerts[i]);
-                var childSubmeshes = subMeshList.GetRange(parentSubmeshIndex + 1, parentVerts[i].Children.Count());
+                var childSubmeshes = subMeshList.GetRange(parentSubmeshIndex + 1, parentVerts[i].Children.Count() + 1);
                 var parentSubMesh = subMeshList[parentSubmeshIndex];
 
                 var combineSubMesh = new CombineInstance[childSubmeshes.Count + 1];
@@ -192,7 +195,8 @@ namespace PlatformBuilderPro
                 if (vertMatrix[0][i].Children != null && vertMatrix[0][i].Children.Count() > 0)
                 {
                     subMeshes.Add(subMeshList[i]);
-                    i = i + Array.IndexOf(vertMatrix[0], vertMatrix[0][i]) + 1 + vertMatrix[0][i].Children.Count();
+                    i = Array.IndexOf(vertMatrix[0], vertMatrix[0][i]) + 1 + vertMatrix[0][i].Children.Count();
+                    
                 }
                 else
                 {

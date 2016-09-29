@@ -9,28 +9,32 @@ namespace PlatformBuilderPro
     public class PlatformSection : MonoBehaviour
     {
         #region properties
-        [Serializable]
-        public struct Child
-        {
-            public Vector3 position;
-            public Vector3 offset;
-            public Vector3[] positions;
-        }
+        //[Serializable]
+        //public struct Child
+        //{
+        //    public Vector3 position;
+        //    public Vector3 offset;
+        //    public Vector3[] positions;
+        //}
 
         public int OrderId;
+        public int ChildIndex;
 
         [HideInInspector]
         public List<PlatformPoint> platformPoints;
 
         [SerializeField]
-        public List<Child> Children
+        public List<PlatformSection> Children
         {
             get
             {
-                if (_children == null) _children = new List<Child>();
+                if (_children == null) _children = new List<PlatformSection>();
                 return _children;
             }
         }
+
+        public GameObject ChildContainer;
+        public bool isChild;
 
         private Transform[] points;
         private Vector3 _lastPosition;
@@ -39,16 +43,19 @@ namespace PlatformBuilderPro
         private Platform _platform;
 
         [SerializeField]
-        private List<Child> _children;
+        private List<PlatformSection> _children;
+
         #endregion
 
         //set up properties when created
         void Start()
         {
             #if UNITY_EDITOR
-                platformPoints = new List<PlatformPoint>(GetComponentsInChildren<PlatformPoint>());
-                _platform = transform.parent.GetComponent<Platform>();
-                UpdatePlatform();
+
+            platformPoints = new List<PlatformPoint>(GetComponentsInChildren<PlatformPoint>());
+            _platform = transform.root.GetComponentInChildren<Platform>();
+            UpdatePlatform();
+
             #endif
         }
 
@@ -135,32 +142,40 @@ namespace PlatformBuilderPro
         //update the platform, choosing whether or not to update at a regulated interval
         public void UpdatePlatform(bool updateConsistant)
         {
-            var sections = _platform.GetSections();
+            //var sections = _platform.GetSections();
 
-            for (var i = 0; i < sections.Length; i++)
-            {
-                sections[i].UpdateChildren();
-                var points = sections[i].GetPoints();
-                for (var k = 0; k < points.Length; k++)
-                {
-                    points[k].UpdateChildren();
-                }
-            }
+            //for (var i = 0; i < sections.Length; i++)
+            //{
+            //    sections[i].UpdateChildren();
+            //    var points = sections[i].GetPoints();
+            //    for (var k = 0; k < points.Length; k++)
+            //    {
+            //        points[k].UpdateChildren();
+            //    }
+            //}
 
-            if (updateConsistant) transform.parent.GetComponent<Platform>().UpdateConsistant();
-            else transform.parent.GetComponent<Platform>().UpdatePlatform();
+            if (updateConsistant) _platform.UpdateConsistant();
+            else _platform.UpdatePlatform();
         }
 
         //get all points, not including child points
         public PlatformPoint[] GetPoints()
         {
-            return gameObject.GetComponentsInChildren<PlatformPoint>().OrderBy(x => x.OrderId).ToArray();
+            var points = new List<PlatformPoint>();
+
+            foreach (Transform child in transform)
+            {
+                var point = child.GetComponent<PlatformPoint>();
+                if (point != null) points.Add(point);
+            }
+
+            return points.OrderBy(x => x.OrderId).ToArray();
         }
 
         //call the active strategy DrawGizmo method for any gizmos that should be drawn by it
         void OnDrawGizmos()
         {
-            if (_platform == null) _platform = transform.parent.GetComponent<Platform>();
+            if (_platform == null) _platform = transform.root.GetComponentInChildren<Platform>();
             if (_platform != null && _platform.activeStrategy != null) _platform.activeStrategy.DrawGizmo();
         }
 
@@ -188,28 +203,40 @@ namespace PlatformBuilderPro
         //add a new child to this section
         public void AddChild(Vector3 position)
         {
-            var positions = GetChildPointPositions(position);
-            Children.Add(new Child { position = position, positions = positions, offset = position - transform.position });
+            var child = Instantiate(gameObject).GetComponent<PlatformSection>();
+            child.isChild = true;
+            child.Children.ForEach(x => DestroyImmediate(x.gameObject));
+            child.Children.Clear();
+            child.transform.parent = ChildContainer.transform;
+            child.transform.position = position;
+            child.transform.localRotation = Quaternion.identity;
+            child.name = "child_" + Children.Count;
+            child.ChildIndex = Children.Count;
+            
+            Children.Add(child);
+
+            //var positions = GetChildPointPositions(position);
+            //Children.Add(new Child { position = position, positions = positions, offset = position - transform.position });
         }
 
         //move a specific child in this section
         public void MoveChild(int index, Vector3 position)
         {
             if ((Children.Count - 1) < index) return;
-
-            var positions = GetChildPointPositions(position);
-            Children[index] = new Child { position = position, positions = positions, offset = position - transform.position };
+            Children[index].transform.position = position;
+            //var positions = GetChildPointPositions(position);
+            //Children[index] = new Child { position = position, positions = positions, offset = position - transform.position };
         }
 
         //update the positions of all children in this section
-        public void UpdateChildren()
-        {
-            for (var i = 0; i < Children.Count; i++)
-            {
-                var positions = GetChildPointPositions(Children[i].position);
-                Children[i] = new Child { position = transform.position + Children[i].offset, positions = positions, offset = Children[i].offset };
-            }
-        }
+        //public void UpdateChildren()
+        //{
+        //    for (var i = 0; i < Children.Count; i++)
+        //    {
+        //        var positions = GetChildPointPositions(Children[i].position);
+        //        Children[i] = new Child { position = transform.position + Children[i].offset, positions = positions, offset = Children[i].offset };
+        //    }
+        //}
 
         //returns whether or not the section has moved (note: can be used to know when to allow the core to update)
         public bool HasMoved()

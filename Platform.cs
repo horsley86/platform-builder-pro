@@ -112,7 +112,7 @@ namespace PlatformBuilderPro
         //gets all sections in a platform and orders them
         public PlatformSection[] GetSections()
         {
-            return GetComponentsInChildren<PlatformSection>().OrderBy(x => x.OrderId).ToArray();
+            return GetComponentsInChildren<PlatformSection>().OrderBy(x => x.OrderId).ThenBy(x => x.ChildIndex).ToArray();
         }
 
         //gets a multi-dimensional array of ordered platform points throughout the mesh
@@ -131,8 +131,12 @@ namespace PlatformBuilderPro
         void SetupSection(PlatformSection[] sections, PlatformSection section)
         {
             var platformSections = sections.OrderBy(x => x.OrderId).ToArray();
-            section.OrderId = platformSections[platformSections.Length - 1].OrderId + 1;
-            section.name = "Section_" + section.OrderId;
+
+            if (!section.isChild)
+            {
+                section.OrderId = platformSections[platformSections.Length - 1].OrderId + 1;
+                section.name = "Section_" + section.OrderId;
+            }
             _platformSections.Add(section);
         }
 

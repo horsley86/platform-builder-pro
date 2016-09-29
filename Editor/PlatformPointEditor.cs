@@ -26,8 +26,8 @@ namespace PlatformBuilderPro
                     }
                 }
 
-                currentPoint.UpdateChildren();
-                currentSection.UpdateChildren();
+                //currentPoint.UpdateChildren();
+                //currentSection.UpdateChildren();
 
                 currentPoint.UpdatePlatform(true);
                 _lastPosition = currentPoint.transform.position;

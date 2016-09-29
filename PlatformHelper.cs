@@ -94,8 +94,11 @@ namespace PlatformBuilderPro
 
             var section = new GameObject();
             section.transform.parent = platform.transform;
-            section.AddComponent<PlatformSection>();
+            var platformSection = section.AddComponent<PlatformSection>();
             section.name = "Section_0";
+            var childContainer = new GameObject("Section_Children");
+            childContainer.transform.parent = section.transform;
+            platformSection.ChildContainer = childContainer;
             var point = new GameObject();
             point.transform.parent = section.transform;
             point.AddComponent<PlatformPoint>();
