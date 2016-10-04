@@ -56,7 +56,7 @@ public class PlatformBuilderWindow : EditorWindow
                     if (activeStrategyIndex == i)
                     {
                         GUILayout.BeginVertical("box");
-                        platform.strategies[i].DrawGui();
+                        platform.strategies[i].DrawGui(this);
                         GUILayout.EndVertical();
                     }
                 }

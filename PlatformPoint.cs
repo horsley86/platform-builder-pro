@@ -102,10 +102,4 @@ namespace PlatformBuilderPro
             return hasMoved;
         }
     }
-
-    [ExecuteInEditMode]
-    public class PointChild : MonoBehaviour
-    {
-        public int Index { get; set; }
-    }
 }

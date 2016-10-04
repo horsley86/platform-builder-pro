@@ -1,5 +1,6 @@
 ﻿using System;
 using UnityEngine;
+using UnityEditor;
 
 namespace PlatformBuilderPro
 {
@@ -9,7 +10,7 @@ namespace PlatformBuilderPro
         public abstract string GuiTitle { get; }
         public abstract void SetParent(Platform platform);
         public abstract PlatformUpdateInfo UpdatePoints(PlatformUpdateInfo updateInfo);
-        public abstract void DrawGui();
+        public abstract void DrawGui(EditorWindow editorWindow);
         public abstract void DrawGizmo();
     }
 }
