@@ -1,6 +1,8 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using System;
+using System.Collections;
 
 namespace PlatformBuilderPro
 {
@@ -18,6 +20,7 @@ namespace PlatformBuilderPro
         [SerializeField]
         List<PlatformSection> _platformSections;
         float _currentSeconds;
+        Guid _latestThrottleId;
         #endregion
         #region public
         [SerializeField]
@@ -25,6 +28,9 @@ namespace PlatformBuilderPro
 
         [SerializeField]
         public PlatformBuilderStrategy activeStrategy;
+
+        [SerializeField]
+        public int activeStrategyIndex;
 
         [SerializeField]
         public MeshFilter meshFilter;
@@ -43,7 +49,7 @@ namespace PlatformBuilderPro
             //if this is a prefab, then we need to break the connection so it will update on its own.
             if (_platformSections != null && _platformSections.Count > 0)
             {
-                UnityEditor.PrefabUtility.DisconnectPrefabInstance(this);
+                //UnityEditor.PrefabUtility.DisconnectPrefabInstance(this);
                 meshFilter.sharedMesh = null;
                 UpdateConsistant();
             }
@@ -98,6 +104,27 @@ namespace PlatformBuilderPro
             }
         }
 
+        public void DebounceUpdatePlatform()
+        {
+            StartCoroutine(UpdatePlatform_debounce());
+        }
+
+        private IEnumerator UpdatePlatform_debounce()
+        {
+            // generate a new id and set it as the latest one 
+            var guid = Guid.NewGuid();
+            _latestThrottleId = guid;
+
+            // set the denounce duration here
+            yield return new WaitForSeconds(0.015f);
+
+            // check if this call is still the latest one
+            if (_latestThrottleId == guid)
+            {
+                UpdateConsistant();
+            }
+        }
+
         //called when a platform is selected and will draw all the sections with a debug line
         public void DrawSections()
         {
@@ -112,7 +139,7 @@ namespace PlatformBuilderPro
         //gets all sections in a platform and orders them
         public PlatformSection[] GetSections()
         {
-            return GetComponentsInChildren<PlatformSection>().OrderBy(x => x.OrderId).ThenBy(x => x.ChildIndex).ToArray();
+            return GetComponentsInChildren<PlatformSection>().OrderBy(x => x.OrderId).ToArray();
         }
 
         //gets a multi-dimensional array of ordered platform points throughout the mesh
@@ -131,12 +158,8 @@ namespace PlatformBuilderPro
         void SetupSection(PlatformSection[] sections, PlatformSection section)
         {
             var platformSections = sections.OrderBy(x => x.OrderId).ToArray();
-
-            if (!section.isChild)
-            {
-                section.OrderId = platformSections[platformSections.Length - 1].OrderId + 1;
-                section.name = "Section_" + section.OrderId;
-            }
+            section.OrderId = platformSections[platformSections.Length - 1].OrderId + 1;
+            section.name = "Section_" + section.OrderId;
             _platformSections.Add(section);
         }
 

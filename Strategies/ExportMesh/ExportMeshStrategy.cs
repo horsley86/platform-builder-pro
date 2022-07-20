@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using UnityEngine;
-using UnityEditor;
 
 namespace PlatformBuilderPro
 {
@@ -27,7 +26,7 @@ namespace PlatformBuilderPro
 
         public override void DrawGizmo(){}
 
-        public override void DrawGui(EditorWindow window)
+        public override void DrawGui()
         {
             if (GUILayout.Button("Export as .OBJ"))
             {

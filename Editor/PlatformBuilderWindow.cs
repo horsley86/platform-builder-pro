@@ -25,6 +25,7 @@ public class PlatformBuilderWindow : EditorWindow
         if (GUILayout.Button("Create New"))
         {
             var sceneCameraTransform = SceneView.lastActiveSceneView.camera.transform;
+            if (material == null) material = new Material(Shader.Find("Diffuse"));
             PlatformHelper.CreateNewPlatform(material, sceneCameraTransform.position + sceneCameraTransform.forward * 10f);
         }
 
@@ -50,13 +51,14 @@ public class PlatformBuilderWindow : EditorWindow
                         //    platform.SetStrategy(platform.strategies[i]);
                         //}
                         platform.SetStrategy(platform.strategies[i]);
+                        platform.activeStrategyIndex = i;
                         activeStrategyIndex = i;
                     }
 
-                    if (activeStrategyIndex == i)
+                    if (platform.activeStrategyIndex == i)
                     {
                         GUILayout.BeginVertical("box");
-                        platform.strategies[i].DrawGui(this);
+                        platform.strategies[i].DrawGui();
                         GUILayout.EndVertical();
                     }
                 }

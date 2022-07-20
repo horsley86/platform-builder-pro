@@ -12,62 +12,50 @@ namespace PlatformBuilderPro
         private Vector3 _lastPosition;
 
         [SerializeField]
-        private List<PointChild> _children;
+        private List<Child> _children;
 
-        
-        //public struct Child
-        //{
-        //    public Vector3 point;
-        //    public Vector3 offset;
-        //}
+        [Serializable]
+        public struct Child
+        {
+            public Vector3 point;
+            public Vector3 offset;
+        }
 
         [HideInInspector]
         public int OrderId;
 
         [SerializeField]
-        public List<PointChild> Children
+        public List<Child> Children
         {
             get
             {
-                if (_children == null) _children = new List<PointChild>();
+                if (_children == null) _children = new List<Child>();
                 return _children;
             }
         }
         #endregion
 
-        void Start()
-        {
-        #if UNITY_EDITOR
-            
-        #endif
-        }
-
         //add a child point to this point
         public void AddChild(Vector3 position)
         {
-            var child = new GameObject("child_" + Children.Count, new Type[] { typeof(PointChild) }).GetComponent<PointChild>();
-            child.transform.parent = transform;
-            child.transform.position = position;
-            child.transform.localRotation = Quaternion.identity;
-            child.Index = Children.Count;
-            Children.Add(child);
+            Children.Add(new Child { point = position, offset = position - transform.position });
         }
 
         //move a child (given an index in the Children list)
         public void MoveChild(int index, Vector3 position)
         {
             if ((Children.Count - 1) < index) return;
-            Children[index].transform.position = position;
+            Children[index] = new Child { point = position, offset = position - transform.position };
         }
 
         //since the children are in world coordinates, make sure we keep their positions updated relative to the parent point
-        //public void UpdateChildren()
-        //{
-        //    for (var i = 0; i < Children.Count; i++)
-        //    {
-        //        Children[i] = new Child { point = transform.position + Children[i].offset, offset = Children[i].offset };
-        //    }
-        //}
+        public void UpdateChildren()
+        {
+            for (var i = 0; i < Children.Count; i++)
+            {
+                Children[i] = new Child { point = transform.position + Children[i].offset, offset = Children[i].offset };
+            }
+        }
 
         //update the platform every tenth of a second
         public void UpdatePlatform()
@@ -86,7 +74,7 @@ namespace PlatformBuilderPro
         public Vector3[] GetPointVects(Vector3 offset)
         {
             var vectList = new List<Vector3>() { transform.position + offset };
-            vectList.AddRange(Children.Select(x => x.transform.position + offset));
+            vectList.AddRange(Children.Select(x => x.point + offset));
             return vectList.ToArray();
         }
 

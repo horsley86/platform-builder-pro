@@ -50,7 +50,17 @@ namespace PlatformBuilderPro
             var strategyStrings = System.IO.Directory.GetDirectories("Assets/platform-builder-pro/strategies");
             foreach (var strategyString in strategyStrings)
             {
+#if UNITY_EDITOR_WIN
+
                 var strategyStringArray = strategyString.Split('\\');
+
+#endif
+
+#if UNITY_EDITOR_OSX
+
+                var strategyStringArray = strategyString.Split('/');
+
+#endif
                 var strategyName = strategyStringArray[strategyStringArray.Length - 1] + "Strategy";
                 platformBuilderStrategyList.Add((PlatformBuilderStrategy)ScriptableObject.CreateInstance(strategyName));
             }

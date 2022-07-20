@@ -42,6 +42,7 @@ namespace PlatformBuilderPro
         {
             var platform = _gameObject.GetComponent<Platform>();
             var points = platform.GetPoints();
+            var sections = platform.GetSections();
 
             //run current strategy before building mesh
             var updateInfo = platformBuilder.Update(points);
@@ -52,7 +53,7 @@ namespace PlatformBuilderPro
             points = updateInfo.points;
 
             //get verts from points
-            vertMatrix = points.Select(x => x.Select(z => new Vert { Vector = z.transform.position, Children = z.Children.Select(y => y.transform.position).ToArray() }).ToArray()).ToArray();
+            vertMatrix = points.Select(x => x.Select(z => new Vert { Vector = z.transform.position, Children = z.Children.Select(y => y.point).ToArray() }).ToArray()).ToArray();
 
             //check for any verts with child points and set them up as their own verts
             for (var i = 0; i < vertMatrix.Length; i++)
@@ -71,6 +72,32 @@ namespace PlatformBuilderPro
                 vertMatrix[i] = vertList.ToArray();
             }
 
+            //set up children from platformSections
+            var sectionsWithChildren = sections.Where(x => x.Children.Count > 0).ToArray();
+            if (sectionsWithChildren.Length > 0)
+            {
+                for (var i = 0; i < sectionsWithChildren.Length; i++)
+                {
+                    var section = sectionsWithChildren[i];
+                    section.UpdateChildren();
+                    var previousSectionsChildCount = sectionsWithChildren.Take(i).Select(x => x.Children.Count);
+                    var previousSectionsChildCountIndex = 0;
+                    if (previousSectionsChildCount.Count() > 0)
+                    {
+                        previousSectionsChildCountIndex = previousSectionsChildCount.Aggregate((previous, next) => previous + next);
+                    }
+                    var sectionIndex = Array.IndexOf(sections.ToArray(), section) + previousSectionsChildCountIndex;
+                    
+                    for (var k = 0; k < section.Children.Count; k++)
+                    {
+                        var child = section.Children[k];
+                        var vertMatrixList = vertMatrix.ToList();
+                        vertMatrixList.Insert(sectionIndex + k + 1, child.positions.Select(x => new Vert { Vector = x }).ToArray());
+                        vertMatrix = vertMatrixList.ToArray();
+                    }
+                }
+            }
+
             //generate individual sub meshes, one rectangle at a time, and add them to the meshList
             var meshList = new List<Mesh>();
             var firstSectionLengthDistance = 0f;
@@ -79,7 +106,8 @@ namespace PlatformBuilderPro
             {
                 var currentSection = vertMatrix[i];
                 var nextSection = vertMatrix[i + 1];
-                
+                var maxUVLength = 0f;
+
                 for (var k = 0; k < currentSection.Length; k++)
                 {
                     var nextIndex = 0;
@@ -116,6 +144,25 @@ namespace PlatformBuilderPro
                     }
                     meshList.Add(GenerateMeshFromPoints(verts, firstSectionLengthDistance, firstSectionWidthDistance, previousLengthUvs, previousWidthUvs));
                 }
+
+                //Adjust the UV length to the maximum length
+                //this prevents the mesh materials from staggering and keeps them aligned
+                for (var k = 0; k < currentSection.Length; k++)
+                {
+                    var uvs = meshList[meshList.Count - currentSection.Length + k].uv;
+                    var heighestX = uvs.OrderBy(x => x.x).Reverse().First();
+
+                    if (heighestX.x > maxUVLength) maxUVLength = heighestX.x;
+                }
+
+                for (var k = 0; k < currentSection.Length; k++)
+                {
+                    var mesh = meshList[meshList.Count - currentSection.Length + k];
+                    var uvs = mesh.uv;
+                    uvs[0].x = maxUVLength;
+                    uvs[1].x = maxUVLength;
+                    mesh.SetUVs(0, uvs);
+                }
             }
 
             //combine mesh sides through entire platform
@@ -141,7 +188,7 @@ namespace PlatformBuilderPro
             for (var i = 0; i < parentVerts.Length; i++)
             {
                 var parentSubmeshIndex = Array.IndexOf(vertMatrix[0], parentVerts[i]);
-                var childSubmeshes = subMeshList.GetRange(parentSubmeshIndex + 1, parentVerts[i].Children.Count() + 1);
+                var childSubmeshes = subMeshList.GetRange(parentSubmeshIndex + 1, parentVerts[i].Children.Count());
                 var parentSubMesh = subMeshList[parentSubmeshIndex];
 
                 var combineSubMesh = new CombineInstance[childSubmeshes.Count + 1];
@@ -165,8 +212,7 @@ namespace PlatformBuilderPro
                 if (vertMatrix[0][i].Children != null && vertMatrix[0][i].Children.Count() > 0)
                 {
                     subMeshes.Add(subMeshList[i]);
-                    i = Array.IndexOf(vertMatrix[0], vertMatrix[0][i]) + 1 + vertMatrix[0][i].Children.Count();
-                    
+                    i = i + Array.IndexOf(vertMatrix[0], vertMatrix[0][i]) + 1 + vertMatrix[0][i].Children.Count();
                 }
                 else
                 {
@@ -192,45 +238,53 @@ namespace PlatformBuilderPro
         Mesh GenerateMeshFromPoints(Vector3[] vertices, float uvLengthDistance, float uvWidthDistance, Vector2[] previousUvs, Vector2[] previousWidthUvs)
         {
             var vertices2D = new Vector2[vertices.Length];
-            var cross = Vector3.Cross(vertices[1] - vertices[0], vertices[2] - vertices[1]);
+            //var cross = Vector3.Cross(vertices[1] - vertices[0], vertices[2] - vertices[1]);
+            //var crossX = Math.Round(cross.x);
+            //var crossY = Math.Round(cross.y);
+            //var crossZ = Math.Round(cross.z);
 
-            if (cross.x != 0)
-            {
-                if (cross.x < 0)
-                {
-                    vertices2D = Array.ConvertAll(vertices, x => new Vector2(x.z, x.y));
-                }
-                else
-                {
-                    vertices2D = Array.ConvertAll(vertices, x => new Vector2(x.y, x.z));
-                }
-            }
-            else if (cross.y != 0)
-            {
-                if (cross.y < 0)
-                {
-                    vertices2D = Array.ConvertAll(vertices, x => new Vector2(x.x, x.z));
-                }
-                else
-                {
-                    vertices2D = Array.ConvertAll(vertices, x => new Vector2(x.z, x.x));
-                }
-            }
-            else if (cross.z != 0)
-            {
-                if (cross.z < 0)
-                {
-                    vertices2D = Array.ConvertAll(vertices, x => new Vector2(x.x, x.y));
-                }
-                else
-                {
-                    vertices2D = Array.ConvertAll(vertices, x => new Vector2(x.y, x.x));
-                }
-            }
+            //var directionVector = (vertices[0] - vertices[1]).normalized;
+            //var dirX = Math.Abs(directionVector.x);
+            //var dirY = Math.Abs(directionVector.y);
+            //var dirZ = Math.Abs(directionVector.z);
+
+            //if (dirX > dirY && dirX > dirZ)
+            //{
+            //    if (directionVector.x < 0)
+            //    {
+            //        vertices2D = Array.ConvertAll(vertices, x => new Vector2(x.z, x.x));
+            //    }
+            //    else
+            //    {
+            //        vertices2D = Array.ConvertAll(vertices, x => new Vector2(x.x, x.z));
+            //    }
+            //}
+            //else if (dirY > dirX && dirY > dirZ)
+            //{
+            //    if (directionVector.y < 0)
+            //    {
+            //        vertices2D = Array.ConvertAll(vertices, x => new Vector2(x.x, x.z));
+            //    }
+            //    else
+            //    {
+            //        vertices2D = Array.ConvertAll(vertices, x => new Vector2(x.z, x.y));
+            //    }
+            //}
+            //else if (dirZ > dirX && dirZ > dirY)
+            //{
+            //    if (directionVector.z < 0)
+            //    {
+            //        vertices2D = Array.ConvertAll(vertices, x => new Vector2(x.x, x.y));
+            //    }
+            //    else
+            //    {
+            //        vertices2D = Array.ConvertAll(vertices, x => new Vector2(x.y, x.x));
+            //    }
+            //}
 
             // Use the triangulator to get indices for creating triangles
             var tr = new PlatformHelper.Triangulator(vertices2D);
-            int[] indices = tr.Triangulate();
+            int[] indices = tr.Triangulate(true);
 
             //uvs
             var currentUvLengthDistance = (Mathf.Abs(Vector3.Distance(vertices[0], vertices[3])) / uvLengthDistance);
@@ -265,12 +319,13 @@ namespace PlatformBuilderPro
 
             // Use the triangulator to get indices for creating triangles
             var tr = new PlatformHelper.Triangulator(vertices2D);
-            int[] indices = tr.Triangulate();
+            int[] indices = tr.Triangulate(false);
 
             // Create the mesh
             Mesh msh = new Mesh();
-            msh.vertices = vertices.Select(x => x.Vector).ToArray(); ;
-            msh.triangles = indices;
+            msh.vertices = vertices.Select(x => x.Vector).ToArray();
+            msh.triangles = isStart ? indices : indices;
+
             return msh;
         }
     }
