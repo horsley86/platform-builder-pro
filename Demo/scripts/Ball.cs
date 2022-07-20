@@ -3,6 +3,7 @@
 public class Ball : MonoBehaviour {
 
     public float force;
+    public Transform cameraTransform;
 
     private Rigidbody _rigidbody;
     private bool _isGrounded;
@@ -14,9 +15,16 @@ public class Ball : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-        if (!_isGrounded) return;
-        var vectorForce = Input.GetAxis("Vertical") * Vector3.forward;
-        vectorForce += Input.GetAxis("Horizontal") * Vector3.right;
+        //if (!_isGrounded) return;
+
+        var direction = (transform.position - cameraTransform.position).normalized;
+        var directionRight = Vector3.Cross(Vector3.up, direction).normalized;
+
+        var vectorForce = Input.GetAxis("Horizontal") * directionRight;
+
+        if (_isGrounded)
+            vectorForce += Input.GetAxis("Vertical") * direction;
+
         _rigidbody.AddForce(vectorForce * force);
 	}
 
