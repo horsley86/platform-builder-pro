@@ -66,5 +66,39 @@ namespace PlatformBuilderPro
             }
             return platformBuilderStrategyList.ToArray();
         }
+
+        public struct StrategyMetaInfo
+        {
+            public string Name;
+            public string Description;
+            public string ImgDir;
+            public string StoreUrl;
+        }
+
+        public static StrategyMetaInfo[] GetAllStrategyMetaInfo()
+        {
+            return new StrategyMetaInfo[]
+            {
+                new StrategyMetaInfo()
+                {
+                    Name = "Export Mesh",
+                    Description = null,
+                    ImgDir = null,
+                    StoreUrl = null
+                },
+                new StrategyMetaInfo()
+                {
+                    Name = "Procedural Generation",
+                    Description = "Build platforms with the click of a button!",
+                    ImgDir = "Assets/platform-builder-pro/StrategyMeta/Procedural/art.png",
+                    StoreUrl = "https://u3d.as/2T6c"
+                }
+            };
+        }
+
+        public static PlatformBuilderStrategy GetStrategyFromMetaName(PlatformBuilderStrategy[] strategies, string name)
+        {
+            return Array.Find(strategies, x => x.GuiTitle == name);
+        }
     }
 }

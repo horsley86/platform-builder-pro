@@ -5,7 +5,6 @@ using PlatformBuilderPro;
 public class PlatformBuilderWindow : EditorWindow
 {
     Material material;
-    int activeStrategyIndex;
 
 	[MenuItem("Window/Platform Builder")]
 	public static void ShowWindow()
@@ -39,27 +38,73 @@ public class PlatformBuilderWindow : EditorWindow
                 GUILayout.Label("Platform Operations");
                 GUILayout.Space(5f);
 
-                if (platform.strategies == null || platform.strategies[0] == null) platform.strategies = PlatformBuilder.GetStrategies();
+                if (platform.strategies == null || platform.strategies[0] == null || platform.strategies.Length != PlatformBuilder.GetStrategies().Length) platform.strategies = PlatformBuilder.GetStrategies();
+
+                var strategyMetaInfoArray = PlatformBuilder.GetAllStrategyMetaInfo();
 
                 //iterate through the platform's strategies and paint the active gui
-                for (var i = 0; i < platform.strategies.Length; i++)
+                for (var i = 0; i < strategyMetaInfoArray.Length; i++)
                 {
-                    if (GUILayout.Button(platform.strategies[i].GuiTitle))
-                    {
-                        //if (activeStrategyIndex != i)
-                        //{
-                        //    platform.SetStrategy(platform.strategies[i]);
-                        //}
-                        platform.SetStrategy(platform.strategies[i]);
-                        platform.activeStrategyIndex = i;
-                        activeStrategyIndex = i;
-                    }
+                    var strategy = PlatformBuilder.GetStrategyFromMetaName(platform.strategies, strategyMetaInfoArray[i].Name);
 
-                    if (platform.activeStrategyIndex == i)
+                    if (strategy == null)
                     {
-                        GUILayout.BeginVertical("box");
-                        platform.strategies[i].DrawGui();
-                        GUILayout.EndVertical();
+                        if (GUILayout.Button(strategyMetaInfoArray[i].Name))
+                        {
+                            //platform.SetStrategy(strategy);
+                            platform.activeStrategyIndex = i;
+                        }
+
+                        if (platform.activeStrategyIndex == i)
+                        {
+                            var bytes = System.IO.File.ReadAllBytes(strategyMetaInfoArray[i].ImgDir);
+                            Texture2D tex = new Texture2D(2, 2);
+                            tex.LoadImage(bytes);
+
+                            GUILayout.BeginHorizontal("box");
+                            GUILayout.Box(tex, GUILayout.Width(150), GUILayout.Height(100));
+                            var style = new GUIStyle();
+                            style.fontSize = 18;
+                            style.normal.textColor = Color.white;
+                            style.wordWrap = true;
+                            style.padding = new RectOffset(5, 0, 5, 10);
+
+                            var descStyle = new GUIStyle();
+                            descStyle.wordWrap = true;
+                            descStyle.normal.textColor = Color.white;
+                            descStyle.wordWrap = true;
+                            descStyle.padding = new RectOffset(5, 0, 0, 5);
+
+                            GUILayout.BeginVertical();
+
+                            GUILayout.Label(strategyMetaInfoArray[i].Name, style);
+
+                            GUILayout.Label(strategyMetaInfoArray[i].Description, descStyle);
+
+                            if (GUILayout.Button("More info here!"))
+                            {
+                                Application.OpenURL(strategyMetaInfoArray[i].StoreUrl);
+                            }
+
+                            GUILayout.EndVertical();
+
+                            GUILayout.EndHorizontal();
+                        }
+                    }
+                    else
+                    {
+                        if (GUILayout.Button(strategy.GuiTitle))
+                        {
+                            platform.SetStrategy(strategy);
+                            platform.activeStrategyIndex = i;
+                        }
+
+                        if (platform.activeStrategyIndex == i)
+                        {
+                            GUILayout.BeginVertical("box");
+                            strategy.DrawGui();
+                            GUILayout.EndVertical();
+                        }
                     }
                 }
             }
